@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI ATS Evaluation Engine - Resume & Job Matcher</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .tab-active {
+      background-color: #ffffff;
+      color: #4338ca;
+      border-bottom: 3px solid #4f46e5;
+      font-weight: 700;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .tab-inactive {
+      color: #64748b;
+      font-weight: 600;
+    }
+    .tab-inactive:hover {
+      color: #1e293b;
+      background-color: #f1f5f9;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-indigo-900 text-white shadow-lg sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-600 p-2 rounded-xl text-2xl">🎯</div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">AI ATS Evaluation Engine</h1>
+          <p class="text-xs text-indigo-200">Powered by Local Llama 3.2 via Ollama</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span> Local AI Ready
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Input Column (5 cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        <!-- Job Description Card -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <h2 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <span>📋</span> Job Description (JD)
+          </h2>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Job Title (Optional)</label>
+              <input type="text" id="jobTitle" placeholder="e.g. Senior Full Stack Developer" 
+                     class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Job Requirements & Responsibilities *</label>
+              <textarea id="jobDescription" rows="6" placeholder="Paste job requirements, required years of experience, technical stack, qualifications..."
+                        class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resume Input Card -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <span>📄</span> Candidate Resume (CV)
+            </h2>
+            <div class="flex text-xs bg-slate-100 p-1 rounded-lg">
+              <button id="tabFileBtn" onclick="switchResumeTab('file')" class="px-3 py-1 font-bold rounded-md bg-white shadow-sm text-indigo-700">Upload File</button>
+              <button id="tabTextBtn" onclick="switchResumeTab('text')" class="px-3 py-1 font-bold rounded-md text-slate-600">Paste Text</button>
+            </div>
+          </div>
+
+          <!-- File Upload Mode -->
+          <div id="fileUploadSection" class="space-y-3">
+            <div class="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/50 rounded-xl p-6 text-center cursor-pointer transition relative">
+              <input type="file" id="resumeFile" accept=".pdf,.docx,.txt" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onchange="handleFileSelected(event)">
+              <div class="space-y-2">
+                <span class="text-3xl block">📎</span>
+                <p class="text-sm font-semibold text-slate-700" id="filePromptText">Click to upload CV file (PDF or Word)</p>
+                <p class="text-xs text-slate-400">Powered by pdfplumber & PyMuPDF with Bold text awareness</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Text Mode -->
+          <div id="textUploadSection" class="hidden space-y-3">
+            <textarea id="resumeText" rows="6" placeholder="Paste the candidate's resume text here directly..."
+                      class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="mt-5">
+            <button onclick="runAtsEvaluation()" id="submitBtn"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-base">
+              <span>🚀</span> Evaluate CV & Match with Job
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Column (7 cols) -->
+      <div class="lg:col-span-7">
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="bg-white p-12 rounded-2xl border border-dashed border-slate-300 text-center text-slate-400 h-full flex flex-col items-center justify-center space-y-3 min-h-[460px]">
+          <span class="text-5xl">📊</span>
+          <p class="text-base font-semibold text-slate-600">Evaluation results will appear here organized in tabs</p>
+          <p class="text-xs text-slate-400 max-w-sm">You will receive the match score, matched and missing skills, experience and education alignment, and strengths & weaknesses in a structured format.</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden bg-white p-12 rounded-2xl border border-slate-200 text-center h-full flex flex-col items-center justify-center space-y-4 min-h-[460px]">
+          <div class="relative flex items-center justify-center">
+            <div class="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+            <span class="absolute text-xs font-bold text-indigo-700 font-mono" id="loadingSeconds">0s</span>
+          </div>
+          <div>
+            <p class="text-base font-bold text-slate-800">Analyzing Resume with Local AI...</p>
+            <p class="text-xs text-slate-500 mt-1">Processing document tokens with local Llama 3.2</p>
+          </div>
+          <div class="max-w-xs w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-indigo-600 h-1.5 rounded-full animate-pulse w-3/4"></div>
+          </div>
+          <p class="text-[11px] text-slate-400">Large documents may take 30-75 seconds on local hardware</p>
+        </div>
+
+        <!-- Result Container -->
+        <div id="resultCard" class="hidden space-y-5">
+          
+          <!-- Compact Header: Match Score Banner -->
+          <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-5 rounded-2xl shadow-lg">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs text-indigo-300 font-semibold uppercase tracking-wider">ATS Match Result</span>
+                <div class="flex items-baseline gap-3 mt-1">
+                  <span id="scoreDisplay" class="text-5xl font-black text-emerald-400 font-mono">0%</span>
+                  <span id="recBadge" class="text-xs px-3 py-1 rounded-full font-bold bg-white/10 border border-white/20">--</span>
+                </div>
+              </div>
+              <div class="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl font-bold border-2 border-indigo-500/40" id="gaugeCircle">
+                🎯
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs Navigation Bar -->
+          <div class="bg-slate-200/70 p-1.5 rounded-2xl flex flex-wrap gap-1 border border-slate-300/60 shadow-inner">
+            <button id="tab-btn-overview" onclick="switchResultTab('overview')"
+                    class="tab-active flex-1 min-w-[90px] py-2 px-3 text-xs md:text-sm rounded-xl transition text-center flex items-center justify-center gap-1.5">
+              <span>📊</span> <span>Overview</span>
+            </button>
+            <button id="tab-btn-skills" onclick="switchResultTab('skills')"
+                    class="tab-inactive flex-1 min-w-[90px] py-2 px-3 text-xs md:text-sm rounded-xl transition text-center flex items-center justify-center gap-1.5">
+              <span>🎯</span> <span>Skills</span>
+            </button>
+            <button id="tab-btn-experience" onclick="switchResultTab('experience')"
+                    class="tab-inactive flex-1 min-w-[90px] py-2 px-3 text-xs md:text-sm rounded-xl transition text-center flex items-center justify-center gap-1.5">
+              <span>💼</span> <span>Experience & Edu</span>
+            </button>
+            <button id="tab-btn-analysis" onclick="switchResultTab('analysis')"
+                    class="tab-inactive flex-1 min-w-[90px] py-2 px-3 text-xs md:text-sm rounded-xl transition text-center flex items-center justify-center gap-1.5">
+              <span>⚖️</span> <span>Strengths & Gaps</span>
+            </button>
+            <button id="tab-btn-preview" onclick="switchResultTab('preview')"
+                    class="tab-inactive flex-1 min-w-[90px] py-2 px-3 text-xs md:text-sm rounded-xl transition text-center flex items-center justify-center gap-1.5">
+              <span>📄</span> <span>Extracted Text</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: OVERVIEW PANE -->
+          <div id="pane-overview" class="space-y-4">
+            <!-- Executive Summary Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span>📝</span> Executive Recruiter Summary:
+              </h3>
+              <p id="summaryText" class="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200/80"></p>
+            </div>
+
+            <!-- Reading & Parser Stats Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span>⚙️</span> Document Parsing & Word Statistics:
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100">
+                  <span class="text-xs text-indigo-600 block mb-0.5">CV Words Read</span>
+                  <span id="cvWordsDisplay" class="text-xl font-bold text-indigo-900 font-mono">0</span>
+                </div>
+                <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100">
+                  <span class="text-xs text-indigo-600 block mb-0.5">Job Description Words</span>
+                  <span id="jdWordsDisplay" class="text-xl font-bold text-indigo-900 font-mono">0</span>
+                </div>
+                <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100">
+                  <span class="text-xs text-indigo-600 block mb-0.5">Parsing Engine</span>
+                  <span id="engineDisplay" class="text-xs font-bold text-indigo-900 block truncate">pdfplumber</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: SKILLS PANE -->
+          <div id="pane-skills" class="hidden space-y-4">
+            <!-- Matched Skills Card -->
+            <div class="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm">
+              <div class="flex items-center justify-between mb-3 border-b border-emerald-100 pb-2">
+                <h3 class="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                  <span>✅</span> Matched Skills
+                </h3>
+                <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold font-mono">
+                  <span id="matchedCount">0</span> skills
+                </span>
+              </div>
+              <div id="matchedSkillsTags" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Missing Skills Card -->
+            <div class="bg-white p-5 rounded-2xl border border-rose-200 shadow-sm">
+              <div class="flex items-center justify-between mb-3 border-b border-rose-100 pb-2">
+                <h3 class="text-sm font-bold text-rose-800 flex items-center gap-1.5">
+                  <span>⚠️</span> Missing Skills & Deficiencies
+                </h3>
+                <span class="px-2.5 py-0.5 bg-rose-100 text-rose-800 rounded-full text-xs font-bold font-mono">
+                  <span id="missingCount">0</span> missing
+                </span>
+              </div>
+              <div id="missingSkillsTags" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Bold Highlights Card -->
+            <div id="boldSection" class="hidden bg-white p-5 rounded-2xl border border-amber-200 shadow-sm">
+              <div class="flex items-center justify-between mb-3 border-b border-amber-100 pb-2">
+                <h3 class="text-sm font-bold text-amber-800 flex items-center gap-1.5">
+                  <span>✨</span> Candidate Highlighted Terms in CV (Bold Text)
+                </h3>
+              </div>
+              <div id="boldKeywordsTags" class="flex flex-wrap gap-1.5"></div>
+            </div>
+          </div>
+
+          <!-- TAB 3: EXPERIENCE & EDUCATION PANE -->
+          <div id="pane-experience" class="hidden space-y-4">
+            <!-- Work Experience Alignment -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+              <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span>💼</span> Work Experience & Seniority Assessment:
+              </h3>
+              <p id="experienceMatch" class="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200/80"></p>
+            </div>
+
+            <!-- Education Alignment -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+              <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span>🎓</span> Academic Degree & Certification Alignment:
+              </h3>
+              <p id="educationMatch" class="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200/80"></p>
+            </div>
+          </div>
+
+          <!-- TAB 4: STRENGTHS & WEAKNESSES PANE -->
+          <div id="pane-analysis" class="hidden space-y-4">
+            <!-- Strengths -->
+            <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm space-y-3">
+              <h3 class="text-sm font-bold text-emerald-700 flex items-center gap-2">
+                <span>💪</span> Key Candidate Strengths:
+              </h3>
+              <ul id="strengthsList" class="space-y-2 text-sm text-slate-700"></ul>
+            </div>
+
+            <!-- Weaknesses / Investigation Points -->
+            <div class="bg-white p-5 rounded-2xl border border-rose-100 shadow-sm space-y-3">
+              <h3 class="text-sm font-bold text-rose-700 flex items-center gap-2">
+                <span>🔍</span> Areas of Concern / Topics for Interview:
+              </h3>
+              <ul id="weaknessesList" class="space-y-2 text-sm text-slate-700"></ul>
+            </div>
+          </div>
+
+          <!-- TAB 5: EXTRACTED TEXT PREVIEW PANE -->
+          <div id="pane-preview" class="hidden space-y-3">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <span>📄</span> Full Extracted Resume Text:
+                </h3>
+                <span class="text-xs text-slate-400">Verifying complete text accuracy</span>
+              </div>
+              <textarea id="extractedCvPreview" rows="12" readonly
+                        class="w-full p-4 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl leading-relaxed text-slate-700 focus:outline-none resize-y"></textarea>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    let currentResumeInputMode = 'file';
+
+    function switchResumeTab(tab) {
+      currentResumeInputMode = tab;
+      const fileSec = document.getElementById('fileUploadSection');
+      const textSec = document.getElementById('textUploadSection');
+      const tabFileBtn = document.getElementById('tabFileBtn');
+      const tabTextBtn = document.getElementById('tabTextBtn');
+
+      if (tab === 'file') {
+        fileSec.classList.remove('hidden');
+        textSec.classList.add('hidden');
+        tabFileBtn.className = 'px-3 py-1 font-bold rounded-md bg-white shadow-sm text-indigo-700';
+        tabTextBtn.className = 'px-3 py-1 font-bold rounded-md text-slate-600';
+      } else {
+        fileSec.classList.add('hidden');
+        textSec.classList.remove('hidden');
+        tabTextBtn.className = 'px-3 py-1 font-bold rounded-md bg-white shadow-sm text-indigo-700';
+        tabFileBtn.className = 'px-3 py-1 font-bold rounded-md text-slate-600';
+      }
+    }
+
+    function switchResultTab(tabName) {
+      const tabs = ['overview', 'skills', 'experience', 'analysis', 'preview'];
+      tabs.forEach(t => {
+        const pane = document.getElementById('pane-' + t);
+        const btn = document.getElementById('tab-btn-' + t);
+        if (pane && btn) {
+          if (t === tabName) {
+            pane.classList.remove('hidden');
+            btn.className = 'tab-active flex-1 min-w-[90px] py-2 px-3 text-xs md:text-sm rounded-xl transition text-center flex items-center justify-center gap-1.5';
+          } else {
+            pane.classList.add('hidden');
+            btn.className = 'tab-inactive flex-1 min-w-[90px] py-2 px-3 text-xs md:text-sm rounded-xl transition text-center flex items-center justify-center gap-1.5';
+          }
+        }
+      });
+    }
+
+    function handleFileSelected(e) {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById('filePromptText').innerText = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      }
+    }
+
+    async function runAtsEvaluation() {
+      const jd = document.getElementById('jobDescription').value.trim();
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+
+      if (!jd) {
+        alert('Please enter the Job Description (JD) details.');
+        return;
+      }
+
+      document.getElementById('emptyState').classList.add('hidden');
+      document.getElementById('resultCard').classList.add('hidden');
+      document.getElementById('loadingState').classList.remove('hidden');
+      document.getElementById('submitBtn').disabled = true;
+
+      // Start live elapsed timer
+      let elapsedSeconds = 0;
+      const timerSpan = document.getElementById('loadingSeconds');
+      if (timerSpan) timerSpan.innerText = '0s';
+      const liveTimer = setInterval(() => {
+        elapsedSeconds++;
+        if (timerSpan) timerSpan.innerText = elapsedSeconds + 's';
+      }, 1000);
+
+      try {
+        let response;
+        if (currentResumeInputMode === 'file') {
+          const fileInput = document.getElementById('resumeFile');
+          if (!fileInput.files || fileInput.files.length === 0) {
+            alert('Please select a CV file first.');
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('submitBtn').disabled = false;
+            clearInterval(liveTimer);
+            return;
+          }
+          const formData = new FormData();
+          formData.append('file', fileInput.files[0]);
+          formData.append('job_description', jd);
+          if (jobTitle) formData.append('job_title', jobTitle);
+
+          response = await fetch('/api/ats/evaluate-file', {
+            method: 'POST',
+            body: formData,
+            signal: AbortSignal.timeout(180000)
+          });
+        } else {
+          const resumeText = document.getElementById('resumeText').value.trim();
+          if (!resumeText) {
+            alert('Please paste the resume text first.');
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('submitBtn').disabled = false;
+            clearInterval(liveTimer);
+            return;
+          }
+          response = await fetch('/api/ats/evaluate-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              resume_text: resumeText,
+              job_description: jd,
+              job_title: jobTitle
+            }),
+            signal: AbortSignal.timeout(180000)
+          });
+        }
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || 'An error occurred during resume evaluation.');
+        }
+
+        const data = await response.json();
+        renderResult(data);
+      } catch (err) {
+        if (err.name === 'TimeoutError' || err.message.includes('timeout') || err.message.includes('timed out')) {
+          alert('Evaluation took longer than expected. Please make sure the resume text is not excessively long, or try again.');
+        } else {
+          alert('Error: ' + err.message);
+        }
+        document.getElementById('emptyState').classList.remove('hidden');
+      } finally {
+        clearInterval(liveTimer);
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('submitBtn').disabled = false;
+      }
+    }
+
+    function renderResult(data) {
+      document.getElementById('resultCard').classList.remove('hidden');
+
+      // 1. Overall Score & Badge
+      const score = Math.round(data.score || 0);
+      const scoreDisplay = document.getElementById('scoreDisplay');
+      scoreDisplay.innerText = `${score}%`;
+
+      if (score >= 75) {
+        scoreDisplay.className = 'text-5xl font-black text-emerald-400 font-mono';
+      } else if (score >= 50) {
+        scoreDisplay.className = 'text-5xl font-black text-amber-400 font-mono';
+      } else {
+        scoreDisplay.className = 'text-5xl font-black text-rose-400 font-mono';
+      }
+
+      document.getElementById('recBadge').innerText = data.recommendation || 'Evaluated';
+      document.getElementById('summaryText').innerText = data.summary || 'Evaluation completed successfully.';
+
+      // 2. Extraction & Word Stats
+      if (data.cv_word_count !== undefined) {
+        document.getElementById('cvWordsDisplay').innerText = data.cv_word_count;
+      }
+      if (data.jd_word_count !== undefined) {
+        document.getElementById('jdWordsDisplay').innerText = data.jd_word_count;
+      }
+      if (data.extractor_engine) {
+        document.getElementById('engineDisplay').innerText = data.extractor_engine;
+      }
+
+      // 3. Bold Keywords
+      const boldSection = document.getElementById('boldSection');
+      const boldDiv = document.getElementById('boldKeywordsTags');
+      boldDiv.innerHTML = '';
+      if (data.bold_keywords && data.bold_keywords.length > 0) {
+        boldSection.classList.remove('hidden');
+        data.bold_keywords.slice(0, 30).forEach(b => {
+          const span = document.createElement('span');
+          span.className = 'px-2.5 py-1 bg-amber-50 text-amber-900 rounded-lg font-bold text-xs border border-amber-200';
+          span.innerText = b;
+          boldDiv.appendChild(span);
+        });
+      } else {
+        boldSection.classList.add('hidden');
+      }
+
+      // 4. Matched Skills
+      const matchedDiv = document.getElementById('matchedSkillsTags');
+      matchedDiv.innerHTML = '';
+      const matched = data.matched_skills || [];
+      document.getElementById('matchedCount').innerText = matched.length;
+      matched.forEach(s => {
+        const tag = document.createElement('span');
+        tag.className = 'px-3 py-1 text-xs bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl font-bold flex items-center gap-1 shadow-sm';
+        tag.innerHTML = `<span>✓</span> <span>${s}</span>`;
+        matchedDiv.appendChild(tag);
+      });
+
+      // 5. Missing Skills
+      const missingDiv = document.getElementById('missingSkillsTags');
+      missingDiv.innerHTML = '';
+      const missing = data.missing_skills || [];
+      document.getElementById('missingCount').innerText = missing.length;
+      missing.forEach(s => {
+        const tag = document.createElement('span');
+        tag.className = 'px-3 py-1 text-xs bg-rose-50 text-rose-800 border border-rose-300 rounded-xl font-bold flex items-center gap-1 shadow-sm';
+        tag.innerHTML = `<span>✕</span> <span>${s}</span>`;
+        missingDiv.appendChild(tag);
+      });
+
+      // 6. Experience & Education
+      document.getElementById('experienceMatch').innerText = data.experience_match || 'Not specified in evaluation.';
+      document.getElementById('educationMatch').innerText = data.education_match || 'Not specified in evaluation.';
+
+      // 7. Strengths
+      const strList = document.getElementById('strengthsList');
+      strList.innerHTML = '';
+      (data.strengths || []).forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'flex items-start gap-2 bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100 text-xs';
+        li.innerHTML = `<span class="text-emerald-600 font-bold text-sm">✓</span> <span>${item}</span>`;
+        strList.appendChild(li);
+      });
+
+      // 8. Weaknesses
+      const weakList = document.getElementById('weaknessesList');
+      weakList.innerHTML = '';
+      (data.weaknesses || []).forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'flex items-start gap-2 bg-rose-50/60 p-2.5 rounded-xl border border-rose-100 text-xs';
+        li.innerHTML = `<span class="text-rose-600 font-bold text-sm">!</span> <span>${item}</span>`;
+        weakList.appendChild(li);
+      });
+
+      // 9. Extracted Text Preview
+      const previewText = data.extracted_full_text || data.extracted_text_preview || data.resume_text || '';
+      document.getElementById('extractedCvPreview').value = previewText;
+
+      // Reset to first tab
+      switchResultTab('overview');
+    }
+  </script>
+</body>
+</html>

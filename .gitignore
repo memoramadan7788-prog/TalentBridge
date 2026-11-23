@@ -1,0 +1,34 @@
+# Dependencies
+vendor/
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+
+# Environment and sensitive configurations
+.env
+.env.backup
+.env.production
+auth.json
+
+# Cache and Logs
+*.log
+.phpunit.result.cache
+.phpunit.cache
+storage/*.key
+storage/oauth-*.key
+storage/oauth-*.pub
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+
+# IDE and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+Homestead.json
+Homestead.yaml

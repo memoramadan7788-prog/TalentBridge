@@ -1,0 +1,70 @@
+@include('frontend.partials.sidebar-nav', [
+    'eyebrow' => __('navigation.candidate.eyebrow'),
+    'workspaceLabel' => __('navigation.candidate.workspace'),
+    'items' => [
+        [
+            'label' => __('navigation.candidate.overview'),
+            'section' => __('navigation.sections.main'),
+            'icon' => 'grid',
+            'route' => 'frontend.candidate.dashboard',
+            'active' => request()->routeIs('frontend.candidate.dashboard'),
+        ],
+        [
+            'label' => __('navigation.candidate.discover_jobs'),
+            'section' => __('navigation.sections.main'),
+            'icon' => 'search',
+            'route' => 'frontend.candidate.vacancies.index',
+            'active' => request()->routeIs('frontend.candidate.vacancies.*'),
+        ],
+        [
+            'label' => __('navigation.candidate.applications'),
+            'section' => __('navigation.sections.main'),
+            'icon' => 'clipboard',
+            'route' => 'frontend.candidate.applications.index',
+            'active' => request()->routeIs('frontend.candidate.applications.*'),
+        ],
+        [
+            'label' => __('navigation.candidate.interviews'),
+            'section' => __('navigation.sections.main'),
+            'icon' => 'calendar',
+            'route' => 'frontend.candidate.interviews.index',
+            'active' => request()->routeIs('frontend.candidate.interviews.*'),
+        ],
+        [
+            'label' => __('navigation.candidate.assessments'),
+            'section' => __('navigation.sections.main'),
+            'icon' => 'checklist',
+            'route' => 'frontend.candidate.exams.index',
+            'active' => request()->routeIs('frontend.candidate.exams.*'),
+        ],
+        [
+            'label' => __('navigation.candidate.offers'),
+            'section' => __('navigation.sections.main'),
+            'icon' => 'gift',
+            'route' => 'frontend.candidate.offers.index',
+            'active' => request()->routeIs('frontend.candidate.offers.*'),
+        ],
+        [
+            'label' => __('navigation.candidate.profile'),
+            'section' => __('navigation.sections.account'),
+            'icon' => 'user',
+            'route' => 'frontend.candidate.profile',
+            'active' => request()->routeIs('frontend.candidate.profile*'),
+        ],
+        [
+            'label' => __('navigation.candidate.preferences'),
+            'section' => __('navigation.sections.account'),
+            'icon' => 'sliders',
+            'route' => 'frontend.candidate.preferences',
+            'active' => request()->routeIs('frontend.candidate.preferences*'),
+        ],
+        // Employee onboarding (WF2), separate from apply→offer. Join UI ready; discovery/status APIs proposed.
+        [
+            'label' => __('navigation.candidate.membership'),
+            'section' => __('navigation.sections.account'),
+            'icon' => 'building',
+            'route' => 'frontend.candidate.join-company',
+            'active' => request()->routeIs('frontend.candidate.join-company*'),
+        ],
+    ],
+])

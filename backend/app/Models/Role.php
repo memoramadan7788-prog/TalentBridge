@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Models;
+
+use App\Traits\Auditable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Role extends Model
+{
+    use SoftDeletes, Auditable;
+
+
+    protected $table = 'roles';
+    protected $guarded = [];
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(RoleCategory::class, 'role_category_id');
+    }
+
+    public function isCompanyRole(): bool
+    {
+        return $this->category?->name === 'company';
+    }
+
+    public function userRoles(): HasMany
+    {
+        return $this->hasMany(UserRole::class, 'role_id');
+    }
+
+    public function companyEmployees(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(CompanyEmployee::class, UserRole::class, 'role_id', 'user_id', 'id', 'user_id');
+    }
+
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'role_permissions');
+    }
+}
